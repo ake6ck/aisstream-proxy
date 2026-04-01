@@ -22,7 +22,7 @@ wss.on('connection', (client) => {
 
     const subscription = {
       "APIKey": process.env.AIS_API_KEY,
-      "BoundingBoxes": [[[30.67, 47.56], [22.40, 61.53]]],
+      "BoundingBoxes": [[[49.5, -1.5], [52.5, 2.5]]],
       "FilterMessageTypes": ["PositionReport"]
     };
 
