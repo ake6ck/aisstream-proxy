@@ -1,6 +1,6 @@
 import express from 'express';
-import { WebSocket } from 'ws';           // ← Fixed import for client
-import { WebSocketServer } from 'ws';     // ← For the server
+import { WebSocket } from 'ws';
+import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 
 const app = express();
@@ -9,44 +9,54 @@ const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 10000;
 
-console.log("🚀 AISStream Proxy starting...");
+console.log("🚀 AISStream Dynamic Proxy starting...");
 
 wss.on('connection', (client) => {
   console.log('✅ Browser client connected');
 
-  // Connect to aisstream.io
-  const ais = new WebSocket('wss://stream.aisstream.io/v0/stream');
+  let ais = null;
 
-  ais.on('open', () => {
-    console.log('✅ Connected to aisstream.io');
+  // Wait for subscription message from browser
+  client.on('message', (message) => {
+    try {
+      const subscription = JSON.parse(message.toString());
 
-    const subscription = {
-      "APIKey": process.env.AIS_API_KEY,
-      "BoundingBoxes": [[[49.5, -1.5], [52.5, 2.5]]],
-      "FilterMessageTypes": ["PositionReport"]
-    };
+      // Must contain APIKey and BoundingBoxes
+      if (!subscription.APIKey || !subscription.BoundingBoxes) {
+        client.send(JSON.stringify({ error: "APIKey and BoundingBoxes are required" }));
+        return;
+      }
 
-    ais.send(JSON.stringify(subscription));
-  });
+      console.log('📨 Received subscription from user');
 
-  ais.on('message', (data) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(data.toString());
+      // Connect to aisstream.io using the user's own API key
+      ais = new WebSocket('wss://stream.aisstream.io/v0/stream');
+
+      ais.on('open', () => {
+        console.log('✅ Connected to aisstream.io with user API key');
+        ais.send(JSON.stringify(subscription));   // forward exactly what user sent
+      });
+
+      ais.on('message', (data) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(data.toString());
+        }
+      });
+
+      ais.on('close', () => client.close());
+      client.on('close', () => ais && ais.close());
+
+    } catch (err) {
+      console.error("Invalid subscription message:", err);
+      client.send(JSON.stringify({ error: "Invalid JSON" }));
     }
   });
 
-  // Clean up on disconnect
-  client.on('close', () => ais.close());
-  ais.on('close', () => client.close());
-
-  ais.on('error', (err) => console.error('AIS Error:', err));
   client.on('error', (err) => console.error('Client Error:', err));
 });
 
 // Health check
-app.get('/', (req, res) => {
-  res.send('AISStream Proxy is running! ✅');
-});
+app.get('/', (req, res) => res.send('AISStream Dynamic Proxy is running ✅'));
 
 server.listen(PORT, () => {
   console.log(`✅ Listening on port ${PORT}`);
