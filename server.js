@@ -14,10 +14,10 @@ const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 10000;
 
-console.log("🚀 AISStream Dynamic Proxy started on port", PORT);
+console.log("AISStream Dynamic Proxy started on port", PORT);
 
 wss.on('connection', (client) => {
-  console.log('✅ Browser client connected');
+  console.log('Browser client connected');
   let aisConnection = null;
 
   client.on('message', (message) => {
@@ -29,14 +29,14 @@ wss.on('connection', (client) => {
       // Validate subscription
       if (!sub.APIKey) {
         const error = { error: "Missing APIKey" };
-        console.log('❌ Validation failed: Missing APIKey');
+        console.log('Validation failed: Missing APIKey');
         client.send(JSON.stringify(error));
         return;
       }
 
       if (!sub.BoundingBoxes || !Array.isArray(sub.BoundingBoxes) || sub.BoundingBoxes.length === 0) {
         const error = { error: "Missing or invalid BoundingBoxes" };
-        console.log('❌ Validation failed: Invalid BoundingBoxes');
+        console.log('Validation failed: Invalid BoundingBoxes');
         client.send(JSON.stringify(error));
         return;
       }
@@ -48,14 +48,14 @@ wss.on('connection', (client) => {
       }
 
       // Connect to AISStream
-      console.log('🔗 Connecting to aisstream.io...');
+      console.log('Connecting to aisstream.io...');
       aisConnection = new WebSocket('wss://stream.aisstream.io/v0/stream');
 
       aisConnection.on('open', () => {
-        console.log('✅ Successfully connected to aisstream.io');
-        console.log('📤 Sending subscription to aisstream.io...');
+        console.log('Successfully connected to aisstream.io');
+        console.log('Sending subscription to aisstream.io...');
         aisConnection.send(JSON.stringify(sub));
-        client.send(JSON.stringify({ status: "✅ Subscription sent to aisstream.io" }));
+        client.send(JSON.stringify({ status: "Subscription sent to aisstream.io" }));
       });
 
       aisConnection.on('message', (data) => {
@@ -77,30 +77,30 @@ wss.on('connection', (client) => {
           if (client.readyState === WebSocket.OPEN) {
             client.send(strData);
           } else {
-            console.log('⚠️ Browser client not open, message dropped');
+            console.log('Browser client not open, message dropped');
           }
         } catch (e) {
-          console.error('❌ Error processing AISStream message:', e.message);
+          console.error('Error processing AISStream message:', e.message);
           console.error('Raw data:', data.toString().substring(0, 500));
         }
       });
 
       aisConnection.on('error', (err) => {
-        console.error('❌ AISStream connection error:', err.message);
+        console.error('AISStream connection error:', err.message);
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ error: `AISStream error: ${err.message}` }));
         }
       });
 
       aisConnection.on('close', (code) => {
-        console.log(`⚠️ AISStream connection closed with code ${code}`);
+        console.log(`AISStream connection closed with code ${code}`);
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ status: `⚠️ AISStream connection closed (code ${code})` }));
+          client.send(JSON.stringify({ status: `AISStream connection closed (code ${code})` }));
         }
       });
 
     } catch (err) {
-      console.error('❌ Error parsing browser message:', err.message);
+      console.error('Error parsing browser message:', err.message);
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({ error: "Invalid JSON format" }));
       }
@@ -108,14 +108,14 @@ wss.on('connection', (client) => {
   });
 
   client.on('close', () => {
-    console.log('⚠️ Browser client disconnected');
+    console.log('Browser client disconnected');
     if (aisConnection) {
       aisConnection.close();
     }
   });
 
   client.on('error', (err) => {
-    console.error('❌ Browser client error:', err.message);
+    console.error('Browser client error:', err.message);
   });
 });
 
@@ -125,6 +125,6 @@ app.get('/health', (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`✅ Server listening on port ${PORT}`);
-  console.log(`🌐 Access at http://localhost:${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
+  console.log(`Access at http://localhost:${PORT}`);
 });
