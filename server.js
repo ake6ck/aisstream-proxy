@@ -62,14 +62,17 @@ wss.on('connection', (client) => {
         try {
           const strData = data.toString();
           const parsedData = JSON.parse(strData);
-
-          // Log position reports
-          if (parsedData.MessageType === "PositionReport") {
-            const mmsi = parsedData.Message?.PositionReport?.UserID;
-            const shipName = parsedData.MetaData?.ShipName || 'Unknown';
-            console.log(`📡 PositionReport: ${shipName} (MMSI: ${mmsi})`);
-          }
-
+      
+          // Log ALL message types
+          const messageType = parsedData.MessageType || 'Unknown';
+          const mmsi = parsedData.Message?.PositionReport?.UserID || 
+                       parsedData.Message?.StaticData?.UserID || 
+                       'N/A';
+          const shipName = parsedData.MetaData?.ShipName || 'Unknown';
+      
+          console.log(`📡 Message Type: ${messageType} | MMSI: ${mmsi} | Ship: ${shipName}`);
+          console.log('Full message:', JSON.stringify(parsedData, null, 2));
+      
           // Forward to browser client if connection is open
           if (client.readyState === WebSocket.OPEN) {
             client.send(strData);
@@ -78,6 +81,7 @@ wss.on('connection', (client) => {
           }
         } catch (e) {
           console.error('❌ Error processing AISStream message:', e.message);
+          console.error('Raw data:', data.toString().substring(0, 500));
         }
       });
 
